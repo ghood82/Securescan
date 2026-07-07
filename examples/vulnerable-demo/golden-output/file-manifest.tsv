@@ -1,0 +1,8 @@
+path	type	risk_tier	scan_required	reason
+src/server.js	api	High	yes	api file included in static review
+.github/workflows/ci.yml	ci	Medium	yes	ci file included in static review
+Dockerfile	container	Medium	yes	container file included in static review
+package.json	dependency	Medium	yes	dependency file included in static review
+EXPECTED-FINDINGS.md	document	Low	yes	document file included in static review
+README.md	document	Low	yes	document file included in static review
+src/client.js	source	Low	yes	source file included in static review

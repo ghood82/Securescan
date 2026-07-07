@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "project_root": "PATH",
+  "scope": "static-local-review",
+  "summary": {
+    "files_total": 0,
+    "files_scanned": 0,
+    "files_partial": 0,
+    "files_skipped": 0,
+    "coverage_percent": 0
+  },
+  "coverage": [
+    {
+      "path": "src/example.js",
+      "risk_tier": "High",
+      "status": "Full",
+      "reason": "",
+      "patterns_applied": [
+        "auth",
+        "input-validation",
+        "data-exposure"
+      ],
+      "findings": [
+        "SCAN-001"
+      ]
+    }
+  ],
+  "skipped": [
+    {
+      "path": "node_modules",
+      "reason": "Generated dependency directory; dependency manifests scanned instead"
+    }
+  ],
+  "tool_runs": [
+    {
+      "tool": "semgrep",
+      "status": "not-run",
+      "reason": "Tool not installed or not approved"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Validate package
+        run: bash scripts/validate-package.sh
+      - name: Validate CLI front door
+        run: bash scripts/securescan.sh doctor --skip-package-check
+      - name: Validate golden artifact fixture
+        run: bash scripts/validate-securescan-artifacts.sh --artifacts examples/vulnerable-demo/golden-output --phase 4
+      - name: Validate demo findings
+        run: bash scripts/validate-demo-audit.sh --artifacts examples/vulnerable-demo/golden-output
+      - name: Run static scanner on vulnerable demo
+        run: bash scripts/securescan-static.sh --project examples/vulnerable-demo --output /tmp/securescan-demo-output
+      - name: Validate generated vulnerable demo audit
+        run: bash scripts/validate-demo-audit.sh --artifacts /tmp/securescan-demo-output
+      - name: Validate generated export formats
+        run: bash scripts/securescan.sh export --artifacts /tmp/securescan-demo-output --format all --output-dir /tmp/securescan-demo-output/exports

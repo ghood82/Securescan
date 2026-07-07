@@ -1,0 +1,9 @@
+.securescan/
+.DS_Store
+node_modules/
+dist/
+build/
+coverage/
+.tmp/
+__pycache__/
+*.pyc

@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-05-15T17:21:39Z",
+  "project_root": "/Users/garethhood/Desktop/SecureScan-Package/examples/vulnerable-demo",
+  "scope": "static-local-review",
+  "summary": {
+    "files_total": 7,
+    "files_scanned": 7,
+    "files_partial": 0,
+    "files_skipped": 0,
+    "coverage_percent": 100.0
+  },
+  "coverage": [
+    {
+      "path": "src/server.js",
+      "risk_tier": "High",
+      "status": "Full",
+      "reason": "",
+      "patterns_applied": [
+        "cors",
+        "error-handling",
+        "rate-limit",
+        "secrets",
+        "sql-injection",
+        "xss"
+      ],
+      "findings": [
+        "SCAN-001",
+        "SCAN-002",
+        "SCAN-003",
+        "SCAN-004",
+        "SCAN-005",
+        "SCAN-006"
+      ]
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "risk_tier": "Medium",
+      "status": "Full",
+      "reason": "",
+      "patterns_applied": [
+        "ci-supply-chain"
+      ],
+      "findings": [
+        "SCAN-007",
+        "SCAN-008"
+      ]
+    },
+    {
+      "path": "Dockerfile",
+      "risk_tier": "Medium",
+      "status": "Full",
+      "reason": "",
+      "patterns_applied": [
+        "container-hardening"
+      ],
+      "findings": [
+        "SCAN-009",
+        "SCAN-010"
+      ]
+    },
+    {
+      "path": "package.json",
+      "risk_tier": "Medium",
+      "status": "Full",
+      "reason": "",
+      "patterns_applied": [
+        "dependency-manifest"
+      ],
+      "findings": [
+        "SCAN-011"
+      ]
+    },
+    {
+      "path": "EXPECTED-FINDINGS.md",
+      "risk_tier": "Low",
+      "status": "Full",
+      "reason": "",
+      "patterns_applied": [
+        "general-static-review"
+      ],
+      "findings": []
+    },
+    {
+      "path": "README.md",
+      "risk_tier": "Low",
+      "status": "Full",
+      "reason": "",
+      "patterns_applied": [
+        "general-static-review"
+      ],
+      "findings": []
+    },
+    {
+      "path": "src/client.js",
+      "risk_tier": "Low",
+      "status": "Full",
+      "reason": "",
+      "patterns_applied": [
+        "xss"
+      ],
+      "findings": [
+        "SCAN-012"
+      ]
+    }
+  ],
+  "skipped": [],
+  "tool_runs": [
+    {
+      "tool": "securescan-static",
+      "status": "run",
+      "reason": "Deterministic static runner v2.4.0"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "securescan-vulnerable-demo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Intentionally vulnerable fixture for SecureScan smoke tests",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.3",
+    "sqlite3": "^5.1.7"
+  }
+}
