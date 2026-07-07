@@ -205,6 +205,6 @@ bash scripts/validate-demo-audit.sh --artifacts examples/vulnerable-demo/golden-
 
 Costs vary by codebase size, model routing, and how many files require deep review. Treat any static estimate as a rough planning number, not a guarantee. Use phase-by-phase mode on large repositories to control scope and review coverage before continuing.
 
-## Before Public Distribution
+## License
 
-This package does not assert a public open-source license. Set the intended license and legal notices before distributing outside your organization.
+SecureScan is released under the MIT License. See `LICENSE`.

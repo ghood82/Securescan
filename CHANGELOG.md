@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added the MIT License and updated package documentation to reflect the open-source license.
 - Fixed static scanner scope noise by excluding agent metadata/worktree directories such as `.claude`, `.agents`, and `.codex` by default.
 - Fixed generated report Markdown so the `Compliance Matrices` heading is emitted as a proper top-level section.
 - Updated the pinned `actions/checkout` workflow reference to a Node 24-compatible release SHA.

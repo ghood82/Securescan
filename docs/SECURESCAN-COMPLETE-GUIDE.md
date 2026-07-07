@@ -266,6 +266,10 @@ SecureScan is not a replacement for:
 
 It is best understood as a structured static audit workflow that produces evidence and gives teams a strong starting point for remediation, customer diligence, security review, and deeper manual testing.
 
+## License
+
+SecureScan is released under the MIT License. See the repository `LICENSE` file for the full license text.
+
 ## Recommended User Workflow
 
 1. Run `bin/securescan doctor`.
