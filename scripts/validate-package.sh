@@ -232,6 +232,25 @@ else
   fail "static scanner did not produce valid vulnerable-demo audit"
 fi
 
+TMP_EXCLUSION_PROJECT="$(mktemp -d "${TMPDIR:-/tmp}/securescan-exclusion-project.XXXXXX")"
+mkdir -p "${TMP_EXCLUSION_PROJECT}/src" "${TMP_EXCLUSION_PROJECT}/.claude/worktrees/noisy/src"
+cat > "${TMP_EXCLUSION_PROJECT}/src/app.js" <<'EOF'
+const express = require('express');
+const app = express();
+app.get('/hello', (req, res) => res.send('ok'));
+EOF
+cat > "${TMP_EXCLUSION_PROJECT}/.claude/worktrees/noisy/src/noise.js" <<'EOF'
+document.body.innerHTML = location.hash;
+EOF
+TMP_EXCLUSION_OUTPUT="$(mktemp -d "${TMPDIR:-/tmp}/securescan-exclusion-output.XXXXXX")"
+if bash "${ROOT_DIR}/scripts/securescan-static.sh" --project "${TMP_EXCLUSION_PROJECT}" --output "${TMP_EXCLUSION_OUTPUT}" >/dev/null &&
+  ! grep -R "\.claude/worktrees" "${TMP_EXCLUSION_OUTPUT}" >/dev/null 2>&1 &&
+  grep -q "src/app.js" "${TMP_EXCLUSION_OUTPUT}/file-manifest.tsv"; then
+  pass "static scanner excludes agent worktree metadata"
+else
+  fail "static scanner should exclude .claude/worktrees metadata from application scans"
+fi
+
 if bash "${ROOT_DIR}/scripts/securescan.sh" doctor --skip-package-check >/dev/null; then
   pass "CLI doctor command runs"
 else

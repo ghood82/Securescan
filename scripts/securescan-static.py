@@ -23,6 +23,9 @@ from typing import Iterable
 VERSION = "2.4.0"
 
 EXCLUDED_DIRS = {
+    ".agents",
+    ".claude",
+    ".codex",
     ".git",
     ".hg",
     ".svn",
@@ -38,7 +41,9 @@ EXCLUDED_DIRS = {
     "__pycache__",
     ".pytest_cache",
     ".mypy_cache",
+    ".ruff_cache",
     ".turbo",
+    ".vscode",
     "golden-output",
 }
 
@@ -1472,11 +1477,11 @@ Static scanner coverage: {coverage_percent} percent coverage according to `cover
 
 Potential chains should be reviewed by a human analyst. The static runner highlights likely chain surfaces across user input, output handling, authentication, CI/CD, and container boundaries.
 
-	## Compliance Matrices
+## Compliance Matrices
 
-	HIPAA: Not Assessed unless ePHI indicators are present. Proposed-rule items must be labeled proposed-readiness.
+HIPAA: Not Assessed unless ePHI indicators are present. Proposed-rule items must be labeled proposed-readiness.
 
-	OWASP coverage is mapped per finding using the category field in `02-findings.md` and `03-analysis.md`.
+OWASP coverage is mapped per finding using the category field in `02-findings.md` and `03-analysis.md`.
 
 NIST AI RMF: see `nist-ai-rmf-evidence.md` for the dedicated Govern, Map, Measure, and Manage evidence matrix.
 

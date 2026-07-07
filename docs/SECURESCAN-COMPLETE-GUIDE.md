@@ -136,7 +136,7 @@ Then review:
 - `nist-ai-rmf-evidence.md` when the project includes AI, LLM, RAG, agentic, prompt, vector, memory, or tool-calling surfaces.
 - `02-findings.md` when you need raw scanner evidence before analyst filtering.
 
-High findings should be triaged first. Likely findings should be reviewed against real data flow, framework protections, and runtime configuration before remediation is planned. Findings under generated, vendored, backup, or agent-worktree folders should be separated from application-owned code before making engineering decisions.
+High findings should be triaged first. Likely findings should be reviewed against real data flow, framework protections, and runtime configuration before remediation is planned. SecureScan excludes common generated and agent-worktree metadata directories such as `.claude`, `.agents`, `.codex`, `node_modules`, build output, and dependency caches by default; findings in remaining backup or vendored folders should still be separated from application-owned code before making engineering decisions.
 
 ## NIST AI RMF Evidence Matrix
 
@@ -273,7 +273,7 @@ It is best understood as a structured static audit workflow that produces eviden
 3. Run `bin/securescan scan /path/to/project --format all --yes`.
 4. Open `04-report.md` or `exports/report.html`.
 5. Check `coverage.json` for scanned, skipped, and partial areas.
-6. Separate owned application code findings from generated, vendored, backup, or worktree findings.
+6. Separate owned application code findings from backup or vendored findings that are still in scope.
 7. Review `nist-ai-rmf-evidence.md` if AI or agentic components exist.
 8. Triage High findings first.
 9. Validate likely findings against real runtime flow and framework protections.
@@ -284,11 +284,11 @@ It is best understood as a structured static audit workflow that produces eviden
 A result such as:
 
 ```text
-Findings: 93 total (Critical 0, High 9, Medium 68, Low 16)
-Coverage: 100.0% (2635 scanned, 0 skipped)
+Findings: 6 total (Critical 0, High 3, Medium 1, Low 2)
+Coverage: 100.0% (737 scanned, 0 skipped)
 ```
 
-means SecureScan inspected all files it considered in scope and produced 93 static findings. It does not automatically mean all 93 are application-owned production issues. Review paths carefully. Findings under `.claude/worktrees`, generated folders, vendored dependencies, backups, or tool caches may need to be filtered out before prioritizing application remediation.
+means SecureScan inspected all files it considered in scope and produced six static findings. It does not automatically mean every finding is an application-owned production issue. Review paths carefully. SecureScan excludes common generated and agent-worktree metadata directories by default, but backup folders, vendored source, or unusual tool caches may still need to be filtered out before prioritizing application remediation.
 
 ## Best Practices
 

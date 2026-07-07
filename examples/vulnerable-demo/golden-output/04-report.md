@@ -1,7 +1,7 @@
 # SecureScan Final Report
 
 Target: `/Users/garethhood/Desktop/SecureScan-Package/examples/vulnerable-demo`
-Date: 2026-05-15
+Date: 2026-07-07
 Methodology: SecureScan deterministic static runner v2.4.0
 
 ## Executive Summary
@@ -80,11 +80,11 @@ Verification: Add startup validation that rejects missing production secrets.
 
 Potential chains should be reviewed by a human analyst. The static runner highlights likely chain surfaces across user input, output handling, authentication, CI/CD, and container boundaries.
 
-	## Compliance Matrices
+## Compliance Matrices
 
-	HIPAA: Not Assessed unless ePHI indicators are present. Proposed-rule items must be labeled proposed-readiness.
+HIPAA: Not Assessed unless ePHI indicators are present. Proposed-rule items must be labeled proposed-readiness.
 
-	OWASP coverage is mapped per finding using the category field in `02-findings.md` and `03-analysis.md`.
+OWASP coverage is mapped per finding using the category field in `02-findings.md` and `03-analysis.md`.
 
 NIST AI RMF: see `nist-ai-rmf-evidence.md` for the dedicated Govern, Map, Measure, and Manage evidence matrix.
 

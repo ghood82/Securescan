@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Fixed static scanner scope noise by excluding agent metadata/worktree directories such as `.claude`, `.agents`, and `.codex` by default.
+- Fixed generated report Markdown so the `Compliance Matrices` heading is emitted as a proper top-level section.
+- Updated the pinned `actions/checkout` workflow reference to a Node 24-compatible release SHA.
+- Added package validation coverage for agent-worktree exclusion behavior and report heading formatting.
+
 ## v2.4.0 - CLI and export usability
 
 - Added `bin/securescan`, `scripts/securescan.sh`, and `scripts/securescan.py` as the one-command CLI front door.

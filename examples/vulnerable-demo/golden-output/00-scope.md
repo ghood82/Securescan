@@ -1,6 +1,6 @@
 # SecureScan Scope And Authorization
 
-Audit date: 2026-05-15
+Audit date: 2026-07-07
 Auditor: SecureScan deterministic static runner v2.4.0
 Target project: /Users/garethhood/Desktop/SecureScan-Package/examples/vulnerable-demo
 

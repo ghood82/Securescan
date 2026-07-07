@@ -247,6 +247,7 @@ fi
 if [ "$PHASE" -ge 4 ]; then
   require_file "04-report.md"
   require_contains "04-report.md" "Executive Summary|Scope|Validated Findings|Remediation|Risk Acceptance"
+  require_contains "04-report.md" '^## Compliance Matrices$'
 fi
 
 if grep -RInE '(AKIA[0-9A-Z]{16}|BEGIN (RSA|OPENSSH|EC|DSA) PRIVATE KEY|ghp_[A-Za-z0-9_]{30,}|sk-[A-Za-z0-9]{20,})' "$ROOT" >/dev/null 2>&1; then

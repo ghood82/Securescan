@@ -1,7 +1,7 @@
 # NIST AI RMF Evidence Matrix
 
 Target: `/Users/garethhood/Desktop/SecureScan-Package/examples/vulnerable-demo`
-Assessment date: 2026-05-15
+Assessment date: 2026-07-07
 Assessor: SecureScan deterministic static runner v2.4.0
 Source baseline: NIST AI RMF 1.0 Govern, Map, Measure, Manage
 
