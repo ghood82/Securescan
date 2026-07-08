@@ -163,6 +163,7 @@ seen_paths = set()
 full_count = 0
 partial_count = 0
 skipped_count = 0
+skipped_list_count = 0
 
 if isinstance(coverage, list):
     for index, item in enumerate(coverage):
@@ -193,13 +194,14 @@ if isinstance(coverage, list):
             skipped_count += 1
 
 if isinstance(skipped, list):
+    skipped_list_count = len(skipped)
     for index, item in enumerate(skipped):
         expect(isinstance(item, dict), f"skipped[{index}] must be an object")
         if not isinstance(item, dict):
             continue
         expect(isinstance(item.get("path"), str) and item.get("path"), f"skipped[{index}].path must be a non-empty string")
         expect(isinstance(item.get("reason"), str) and item.get("reason"), f"skipped[{index}].reason must be a non-empty string")
-    skipped_count += len(skipped)
+    expect(skipped_list_count == skipped_count, f"skipped list length {skipped_list_count} does not match Skipped coverage count {skipped_count}")
 
 if isinstance(tool_runs, list):
     for index, item in enumerate(tool_runs):

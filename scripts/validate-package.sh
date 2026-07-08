@@ -251,6 +251,70 @@ else
   fail "static scanner should exclude .claude/worktrees metadata from application scans"
 fi
 
+TMP_SQL_PROJECT="$(mktemp -d "${TMPDIR:-/tmp}/securescan-sql-project.XXXXXX")"
+mkdir -p "${TMP_SQL_PROJECT}/src" "${TMP_SQL_PROJECT}/backend/venv_old_39/lib/python3.9/site-packages/PIL"
+cat > "${TMP_SQL_PROJECT}/src/safe_queries.py" <<'EOF'
+def safe_where_clause(cursor, format_query, organization_id, status):
+    conditions = []
+    params = []
+    if organization_id:
+        conditions.append("organization_id = ?")
+        params.append(organization_id)
+    if status:
+        conditions.append("status = ?")
+        params.append(status)
+    where_clause = " AND ".join(conditions) if conditions else "1=1"
+    cursor.execute(format_query(f"SELECT * FROM orders WHERE {where_clause}"), params)
+
+
+def safe_placeholders(cursor, format_query, doc_ids):
+    placeholders = ", ".join("?" for _ in doc_ids)
+    cursor.execute(
+        format_query(f"SELECT * FROM documents WHERE id IN ({placeholders})"),
+        tuple(doc_ids),
+    )
+EOF
+cat > "${TMP_SQL_PROJECT}/src/unsafe_query.py" <<'EOF'
+def unsafe_request_query(cursor, format_query, request):
+    cursor.execute(format_query(f"SELECT * FROM users WHERE email = '{request.args.get('email')}'"))
+EOF
+cat > "${TMP_SQL_PROJECT}/backend/venv_old_39/lib/python3.9/site-packages/PIL/ImageShow.py" <<'EOF'
+import os
+os.system("open " + path)
+EOF
+TMP_SQL_OUTPUT="$(mktemp -d "${TMPDIR:-/tmp}/securescan-sql-output.XXXXXX")"
+if bash "${ROOT_DIR}/scripts/securescan-static.sh" --project "${TMP_SQL_PROJECT}" --output "${TMP_SQL_OUTPUT}" >/dev/null &&
+  grep -q "src/unsafe_query.py" "${TMP_SQL_OUTPUT}/02-findings.md" &&
+  ! grep -q "src/safe_queries.py" "${TMP_SQL_OUTPUT}/02-findings.md" &&
+  ! grep -R "venv_old_39" "${TMP_SQL_OUTPUT}" >/dev/null 2>&1; then
+  pass "static scanner distinguishes bound SQL assembly from unsafe interpolation"
+else
+  fail "static scanner should suppress safe bound SQL assembly, flag unsafe interpolation, and exclude stale virtualenvs"
+fi
+
+TMP_DOM_PROJECT="$(mktemp -d "${TMPDIR:-/tmp}/securescan-dom-project.XXXXXX")"
+mkdir -p "${TMP_DOM_PROJECT}/src"
+cat > "${TMP_DOM_PROJECT}/src/safe_dom.js" <<'EOF'
+// SECURITY: Avoids innerHTML by building nodes directly.
+function clearAndRenderStatic(list) {
+  list.innerHTML = '';
+  list.innerHTML = '<li class="empty">None</li>';
+}
+EOF
+cat > "${TMP_DOM_PROJECT}/src/unsafe_dom.js" <<'EOF'
+function renderUserHtml(target) {
+  target.innerHTML = location.hash;
+}
+EOF
+TMP_DOM_OUTPUT="$(mktemp -d "${TMPDIR:-/tmp}/securescan-dom-output.XXXXXX")"
+if bash "${ROOT_DIR}/scripts/securescan-static.sh" --project "${TMP_DOM_PROJECT}" --output "${TMP_DOM_OUTPUT}" >/dev/null &&
+  grep -q "src/unsafe_dom.js" "${TMP_DOM_OUTPUT}/02-findings.md" &&
+  ! grep -q "src/safe_dom.js" "${TMP_DOM_OUTPUT}/02-findings.md"; then
+  pass "static scanner distinguishes static DOM assignments from dynamic innerHTML"
+else
+  fail "static scanner should suppress static/clearing innerHTML and flag dynamic innerHTML"
+fi
+
 if bash "${ROOT_DIR}/scripts/securescan.sh" doctor --skip-package-check >/dev/null; then
   pass "CLI doctor command runs"
 else
