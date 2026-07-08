@@ -47,6 +47,26 @@ EXCLUDED_DIRS = {
     "golden-output",
 }
 
+EXCLUDED_DIR_PATTERNS = (
+    re.compile(r"^\.?venv(?:[_-].*)?$"),
+    re.compile(r"^virtualenv(?:[_-].*)?$"),
+)
+
+SQL_KEYWORD_RE = re.compile(r"\b(SELECT|INSERT|UPDATE|DELETE)\b", re.IGNORECASE)
+JS_SELECT_QUERY_RE = re.compile(r"\bSELECT\b.+\bFROM\b", re.IGNORECASE)
+PY_USER_INPUT_INTERPOLATION_RE = re.compile(
+    r"\{[^}]*\b(request|req|input|sys\.argv|os\.environ|environ|get_json|args|form|body|query)\b[^}]*\}",
+    re.IGNORECASE,
+)
+PY_SAFE_SQL_NAMES = {"where", "where_clause", "placeholders", "columns", "column", "table"}
+PY_SAFE_SQL_EVIDENCE = (
+    re.compile(r"\b\w*placeholders\w*\s*=\s*['\"][^'\"]*['\"]\.join\(\s*(?:\[)?['\"]\?['\"]", re.DOTALL),
+    re.compile(r"\bconditions\.append\(\s*['\"][^'\"]*\?[^'\"]*['\"]\s*\)", re.DOTALL),
+    re.compile(r"\bcolumns\s*=\s*(?:'''|\"\"\"|'|\")", re.DOTALL),
+    re.compile(r"\bdef\s+\w+\([^)]*(?:table|column|where_clause|clauses)", re.DOTALL),
+    re.compile(r"\b(?:_in_clause|_placeholders)\s*\(", re.DOTALL),
+)
+
 TEXT_SUFFIXES = {
     ".js",
     ".jsx",
@@ -278,12 +298,16 @@ def rel_path(path: Path, root: Path) -> str:
     return path.relative_to(root).as_posix()
 
 
+def is_excluded_dir_name(name: str) -> bool:
+    return name in EXCLUDED_DIRS or any(pattern.match(name) for pattern in EXCLUDED_DIR_PATTERNS)
+
+
 def is_excluded(path: Path, root: Path) -> bool:
     try:
         parts = path.relative_to(root).parts
     except ValueError:
         return True
-    return any(part in EXCLUDED_DIRS for part in parts)
+    return any(is_excluded_dir_name(part) for part in parts)
 
 
 def is_text_candidate(path: Path) -> bool:
@@ -316,7 +340,7 @@ def list_files(project: Path, max_file_bytes: int) -> tuple[list[Path], list[dic
 
     for current, dirs, names in os.walk(project):
         current_path = Path(current)
-        dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
+        dirs[:] = [d for d in dirs if not is_excluded_dir_name(d)]
         if is_excluded(current_path, project):
             continue
 
@@ -548,6 +572,132 @@ def add_finding(
     )
 
 
+def python_context(lines: list[str], line_number: int, *, before: int = 35, after: int = 10) -> str:
+    index = line_number - 1
+    start = max(0, index - before)
+    end = min(len(lines), index + after)
+    return "\n".join(lines[start:end])
+
+
+def python_execute_block(lines: list[str], line_number: int) -> str:
+    index = line_number - 1
+    start = index
+    lower_bound = max(0, index - 8)
+    for candidate in range(index, lower_bound - 1, -1):
+        if "execute(" in lines[candidate]:
+            start = candidate
+            break
+        if "format_query(" in lines[candidate]:
+            start = candidate
+
+    balance = 0
+    end = start + 1
+    for candidate in range(start, min(len(lines), start + 20)):
+        balance += lines[candidate].count("(") - lines[candidate].count(")")
+        end = candidate + 1
+        if candidate >= index and balance <= 0:
+            break
+    return "\n".join(lines[start:end])
+
+
+def python_interpolated_names(block: str) -> set[str]:
+    return set(re.findall(r"\{([A-Za-z_][A-Za-z0-9_]*)", block))
+
+
+def python_block_has_bound_params(block: str) -> bool:
+    return bool(
+        re.search(
+            r"execute\s*\(\s*(?:.|\n){0,800},\s*(?:tuple\([A-Za-z_][A-Za-z0-9_]*\)|[A-Za-z_][A-Za-z0-9_]*|\[[^\]]*\]|\([^)]*\))",
+            block,
+        )
+    )
+
+
+def is_safe_python_sql_interpolation(lines: list[str], line_number: int) -> bool:
+    context = python_context(lines, line_number)
+    block = python_execute_block(lines, line_number)
+    names = python_interpolated_names(block)
+
+    if PY_USER_INPUT_INTERPOLATION_RE.search(block):
+        return False
+    if not names or not names.issubset(PY_SAFE_SQL_NAMES):
+        return False
+    if not python_block_has_bound_params(block):
+        return False
+    return any(pattern.search(context) for pattern in PY_SAFE_SQL_EVIDENCE)
+
+
+def is_python_sql_interpolation_candidate(lines: list[str], line_number: int) -> bool:
+    line = lines[line_number - 1]
+    if not SQL_KEYWORD_RE.search(line):
+        return False
+
+    block = python_execute_block(lines, line_number)
+    if "execute(" not in block:
+        return False
+    has_sql_interpolation = (
+        "format_query(f" in block
+        or "format_query(f'''" in block
+        or 'format_query(f"""' in block
+        or re.search(r"execute\s*\(\s*f(?:'''|\"\"\"|'|\")", block)
+        or ".format(" in block
+    )
+    if not has_sql_interpolation:
+        return False
+    names = python_interpolated_names(block)
+    context = python_context(lines, line_number)
+    table_is_closed_list = bool(
+        re.search(r"\btables\s*=\s*\[", context)
+        and re.search(r"\bfor\s+table\s+in\s+tables\s*:", context)
+    )
+    if names.issubset({"table"}) and (
+        "_table_exists(cursor, table)" in context or "to_regclass" in block or table_is_closed_list
+    ):
+        return False
+    if python_block_has_bound_params(block) and not PY_USER_INPUT_INTERPOLATION_RE.search(block):
+        return False
+    if is_safe_python_sql_interpolation(lines, line_number):
+        return False
+    return True
+
+
+def js_statement_block(lines: list[str], line_number: int, *, max_lines: int = 8) -> str:
+    start = line_number - 1
+    parts = []
+    for candidate in range(start, min(len(lines), start + max_lines)):
+        parts.append(lines[candidate])
+        if ";" in lines[candidate]:
+            break
+    return "\n".join(parts)
+
+
+def is_js_comment_line(line: str) -> bool:
+    stripped = line.strip()
+    return stripped.startswith("//") or stripped.startswith("*") or stripped.startswith("/*")
+
+
+def is_static_inner_html_assignment(block: str) -> bool:
+    normalized = " ".join(block.strip().split())
+    return bool(
+        re.search(r"\.innerHTML\s*=\s*(['\"])\s*\1\s*;?$", normalized)
+        or re.search(r"\.innerHTML\s*=\s*(['\"])(?:(?!\1).)*\1\s*;?$", normalized)
+    )
+
+
+def is_js_dom_xss_candidate(lines: list[str], line_number: int) -> bool:
+    line = lines[line_number - 1]
+    if is_js_comment_line(line):
+        return False
+    if "dangerouslySetInnerHTML" in line or "insertAdjacentHTML" in line:
+        return True
+    if "innerHTML" not in line:
+        return False
+    block = js_statement_block(lines, line_number)
+    if is_static_inner_html_assignment(block):
+        return False
+    return "${" in block or "+" in block or re.search(r"\.innerHTML\s*=\s*[A-Za-z_$]", block) is not None
+
+
 def scan_file(project: Path, path: Path, findings: list[Finding]) -> list[str]:
     rel = rel_path(path, project)
     text = read_text(path)
@@ -560,7 +710,7 @@ def scan_file(project: Path, path: Path, findings: list[Finding]) -> list[str]:
         lowered = line.lower()
 
         if path.suffix in {".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"}:
-            if re.search(r"\bSELECT\b", line, re.IGNORECASE) and ("+" in line or "${" in line):
+            if JS_SELECT_QUERY_RE.search(line) and ("+" in line or "${" in line):
                 applied.add("sql-injection")
                 add_finding(
                     findings,
@@ -583,7 +733,7 @@ def scan_file(project: Path, path: Path, findings: list[Finding]) -> list[str]:
                     ["sql-injection"],
                 )
 
-            if "innerHTML" in line or "dangerouslySetInnerHTML" in line or "insertAdjacentHTML" in line:
+            if is_js_dom_xss_candidate(lines, index):
                 applied.add("xss")
                 add_finding(
                     findings,
@@ -747,7 +897,7 @@ def scan_file(project: Path, path: Path, findings: list[Finding]) -> list[str]:
                 )
 
         if path.suffix == ".py":
-            if re.search(r"f[\"'].*SELECT|\.format\(.*SELECT", line):
+            if is_python_sql_interpolation_candidate(lines, index):
                 applied.add("sql-injection")
                 add_finding(
                     findings,
